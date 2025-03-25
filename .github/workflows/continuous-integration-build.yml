@@ -1,4 +1,4 @@
-name: CI Build and Push Docker
+name: CI Build
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build and Push Docker Images
+    name: Build Main Branch
     runs-on: ubuntu-latest
 
     steps:
@@ -23,11 +23,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Make mvnw executable
-        run: |
-          chmod +x ./hello-spring-k8s/mvnw
-          chmod +x ./hello-caller/mvnw
-
       - name: Build Hello Spring K8S
         working-directory: ./hello-spring-k8s
         run: ./mvnw clean package
@@ -36,27 +31,24 @@ jobs:
         working-directory: ./hello-caller
         run: ./mvnw clean package
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
+      # Đăng nhập Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Hello Spring K8S image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./hello-spring-k8s
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/hello-spring-k8s:latest
-          builder: ${{ steps.buildx.outputs.name }}
+      # Build và Push Docker image cho hello-spring-k8s
+      - name: Build and Push Hello Spring K8S Docker image
+        working-directory: ./hello-spring-k8s
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/hello-spring-k8s:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/hello-spring-k8s:latest
 
-      - name: Build and push Hello Caller image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./hello-caller
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/hello-caller:latest
-          builder: ${{ steps.buildx.outputs.name }}
+      # Build và Push Docker image cho hello-caller
+      - name: Build and Push Hello Caller Docker image
+        working-directory: ./hello-caller
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/hello-caller:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/hello-caller:latest
+
