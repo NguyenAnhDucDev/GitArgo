@@ -1,14 +1,10 @@
-# Sử dụng image base từ OpenJDK
-FROM openjdk:17-jdk-slim
-
-# Cài đặt thư viện cần thiết
+FROM eclipse-temurin:17-jdk-alpine as builder
 WORKDIR /app
+COPY . .
+RUN ./mvnw clean package -DskipTests
 
-# Copy jar file vào container
-COPY target/hello-spring-k8s.jar /app/hello-spring-k8s.jar
-
-# Cấu hình cổng ứng dụng
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
-
-# Chạy ứng dụng
-CMD ["java", "-jar", "/app/hello-spring-k8s.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"] 
